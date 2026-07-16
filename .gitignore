@@ -1,0 +1,19 @@
+# Build artifacts
+bin/
+obj/
+out/
+
+# Packages
+*.nupkg
+*.snupkg
+
+# Rider / VS / VS Code
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db

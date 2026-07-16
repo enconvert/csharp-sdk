@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Enconvert</RootNamespace>
+    <AssemblyName>Enconvert</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Enconvert</PackageId>
+    <Version>0.0.1</Version>
+    <Authors>Enconvert &lt;support@enconvert.com&gt;</Authors>
+    <Company>Enconvert</Company>
+    <Description>Enconvert SDK — read any page or file into agent-ready Markdown/JSON/screenshots, every read scored. V2 perception (perceive, discover, lookup, distill, ingest, watch) plus file conversion (images, documents, URL/website to PDF/screenshot/Markdown).</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://enconvert.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/conversionapi/csharp-sdk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>enconvert;pdf;screenshot;conversion;html-to-pdf;url-to-pdf;url-to-screenshot;url-to-markdown;image-convert;document-convert;heic-to-webp;docx-to-pdf;api;sdk</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
