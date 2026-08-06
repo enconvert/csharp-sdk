@@ -98,6 +98,20 @@ internal static class JsonHelpers
         return result;
     }
 
+    public static Dictionary<string, double> DoubleDict(JsonObject o, string key)
+    {
+        var result = new Dictionary<string, double>();
+        if (o[key] is JsonObject sub)
+        {
+            foreach (var (k, v) in sub)
+            {
+                if (v is JsonValue jv && jv.TryGetValue<double>(out var n)) result[k] = n;
+            }
+        }
+
+        return result;
+    }
+
     private static bool TryGetString(JsonObject o, string key, out string value)
     {
         if (o[key] is JsonValue v && v.TryGetValue<string>(out var s))

@@ -15,9 +15,9 @@ public sealed record PerceiveViewport
 public record PerceiveOptions
 {
     /// <summary>
-    /// Artifacts to produce, e.g. "markdown", "markdown_fit", "html_cleaned",
-    /// "html_raw", "screenshot", "screenshot_full_page", "pdf", "links",
-    /// "images", "structured". Default: ["markdown", "structured"].
+    /// Artifacts to produce, e.g. "markdown", "html_cleaned", "html_raw",
+    /// "screenshot", "screenshot_full_page", "pdf", "links", "images",
+    /// "structured". Default: ["markdown", "structured"].
     /// </summary>
     public IReadOnlyList<string>? Outputs { get; init; }
 
@@ -67,6 +67,19 @@ public record PerceiveOptions
 
     public bool? RespectRobots { get; init; }
     public bool? Mobile { get; init; }
+
+    /// <summary>
+    /// Strip site chrome (nav, header, footer, cookie banners) from the
+    /// markdown artifact and main_content extract. API default: true.
+    /// </summary>
+    public bool? OnlyMainContent { get; init; }
+
+    /// <summary>
+    /// Respond with the artifact bytes directly (Perceive only —
+    /// PerceiveBatch rejects it with 422). Requires exactly one
+    /// artifact-producing output.
+    /// </summary>
+    public bool? DirectDownload { get; init; }
 }
 
 /// <summary>Options for PerceiveBatch: shared render options plus the output mode.</summary>
@@ -90,6 +103,12 @@ public sealed record PerceiveResult
     /// <summary>0.0-1.0 render quality score.</summary>
     public double? RenderQuality { get; init; }
 
+    /// <summary>HTTP status of the final main-document response.</summary>
+    public int? StatusCode { get; init; }
+
+    /// <summary>Named render-quality deductions that fired, e.g. {"http_error": 0.7}. Empty on a clean render.</summary>
+    public required IReadOnlyDictionary<string, double> Deductions { get; init; }
+
     public bool CacheHit { get; init; }
 
     /// <summary>Keyed by output name (e.g. "markdown", "screenshot_full_page").</summary>
@@ -106,6 +125,42 @@ public sealed record PerceiveResult
     public int? DurationMs { get; init; }
     public string? Error { get; init; }
     public required IReadOnlyList<string> Warnings { get; init; }
+
+    /// <summary>Echo of the request options the server honoured (secrets redacted to booleans). Null when the server omits it.</summary>
+    public JsonObject? OptionsEcho { get; init; }
+}
+
+/// <summary>
+/// Result of a direct-download perceive call (<c>PerceiveDirectAsync</c> /
+/// <c>DownloadPerceiveArtifactAsync</c>): the raw artifact bytes plus the
+/// metadata the server carries on response headers.
+/// </summary>
+public sealed record PerceiveDirectResult
+{
+    /// <summary>The artifact bytes.</summary>
+    public required byte[] Content { get; init; }
+
+    /// <summary>Artifact media type, e.g. "text/markdown; charset=utf-8".</summary>
+    public required string ContentType { get; init; }
+
+    /// <summary>Filename parsed from Content-Disposition (&lt;operation&gt;_&lt;output&gt;.&lt;ext&gt;). Null when the header is absent.</summary>
+    public string? Filename { get; init; }
+
+    public required string OperationId { get; init; }
+    public required string ObjectKey { get; init; }
+    public bool CacheHit { get; init; }
+
+    /// <summary>0.0-1.0 render quality score. Null when the header is absent.</summary>
+    public double? RenderQuality { get; init; }
+
+    /// <summary>HTTP status of the upstream main-document response. Null when the header is absent.</summary>
+    public int? SourceStatusCode { get; init; }
+
+    /// <summary>SHA-256 of the rendered content. Null when the header is absent.</summary>
+    public string? ContentHash { get; init; }
+
+    /// <summary>Number of warnings the render produced. 0 when the header is absent.</summary>
+    public int WarningsCount { get; init; }
 }
 
 public sealed record PerceiveBatchResult

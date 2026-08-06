@@ -11,7 +11,7 @@
 
   <PropertyGroup>
     <PackageId>Enconvert</PackageId>
-    <Version>0.0.1</Version>
+    <Version>0.1.0</Version>
     <Authors>Enconvert &lt;support@enconvert.com&gt;</Authors>
     <Company>Enconvert</Company>
     <Description>Enconvert SDK — read any page or file into agent-ready Markdown/JSON/screenshots, every read scored. V2 perception (perceive, discover, lookup, distill, ingest, watch) plus file conversion (images, documents, URL/website to PDF/screenshot/Markdown).</Description>

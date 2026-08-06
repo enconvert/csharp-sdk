@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -82,6 +83,55 @@ public sealed class EnconvertV2
     {
         var data = await GetAsync($"/v2/perceive/batch/{Uri.EscapeDataString(jobId)}", cancellationToken).ConfigureAwait(false);
         return ToPerceiveBatchResult(data);
+    }
+
+    /// <summary>Artifact-producing outputs accepted by <see cref="PerceiveDirectAsync"/> (everything except "structured", which is inline JSON).</summary>
+    private static readonly string[] ArtifactOutputs =
+    {
+        "markdown", "html_cleaned", "html_raw", "screenshot",
+        "screenshot_full_page", "pdf", "links", "images",
+    };
+
+    /// <summary>
+    /// Renders one URL and streams the artifact bytes back directly
+    /// (direct_download), skipping the JSON envelope and the signed-URL
+    /// round trip. Requires exactly one artifact-producing output in
+    /// <see cref="PerceiveOptions.Outputs"/>; metadata is returned via
+    /// response headers.
+    /// </summary>
+    public async Task<PerceiveDirectResult> PerceiveDirectAsync(string url, PerceiveOptions? opts = null, CancellationToken cancellationToken = default)
+    {
+        opts ??= new PerceiveOptions();
+        var outputs = opts.Outputs ?? new[] { "markdown", "structured" };
+        var artifactCount = outputs.Count(ArtifactOutputs.Contains);
+        if (artifactCount != 1)
+        {
+            throw new ArgumentException(
+                "PerceiveDirect: requires exactly one artifact-producing output ("
+                + string.Join(", ", ArtifactOutputs) + $"); got {artifactCount}");
+        }
+
+        var body = SerializePerceiveOptions(opts);
+        body["url"] = url;
+        body["direct_download"] = true;
+        using var response = await _request(HttpMethod.Post, "/v2/perceive", JsonContentOf(body), cancellationToken).ConfigureAwait(false);
+        await Internal.RaiseForStatusAsync(response, cancellationToken).ConfigureAwait(false);
+        return await ToPerceiveDirectResultAsync(response, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Streams one stored artifact of an earlier perceive operation.
+    /// <paramref name="output"/> may be omitted when the operation produced
+    /// exactly one artifact (otherwise 400 listing the available outputs);
+    /// 410 once the artifact passes the plan's retention window.
+    /// </summary>
+    public async Task<PerceiveDirectResult> DownloadPerceiveArtifactAsync(string operationId, string? output = null, CancellationToken cancellationToken = default)
+    {
+        var path = $"/v2/perceive/{Uri.EscapeDataString(operationId)}?direct_download=true";
+        if (output is not null) path += $"&output={Uri.EscapeDataString(output)}";
+        using var response = await _request(HttpMethod.Get, path, null, cancellationToken).ConfigureAwait(false);
+        await Internal.RaiseForStatusAsync(response, cancellationToken).ConfigureAwait(false);
+        return await ToPerceiveDirectResultAsync(response, cancellationToken).ConfigureAwait(false);
     }
 
     // ------------------------------------------------------------------
@@ -491,6 +541,8 @@ public sealed class EnconvertV2
         if (o.BlockResources is not null) outObj["block_resources"] = EnconvertClient.ToJsonArray(o.BlockResources);
         if (o.RespectRobots is not null) outObj["respect_robots"] = o.RespectRobots;
         if (o.Mobile is not null) outObj["mobile"] = o.Mobile;
+        if (o.OnlyMainContent is not null) outObj["only_main_content"] = o.OnlyMainContent;
+        if (o.DirectDownload is not null) outObj["direct_download"] = o.DirectDownload;
         return outObj;
     }
 
@@ -576,6 +628,8 @@ public sealed class EnconvertV2
             UrlFinal = JsonHelpers.OptStr(d, "url_final"),
             ContentHash = JsonHelpers.OptStr(d, "content_hash"),
             RenderQuality = JsonHelpers.OptNum(d, "render_quality"),
+            StatusCode = JsonHelpers.OptNumInt(d, "status_code"),
+            Deductions = JsonHelpers.DoubleDict(d, "deductions"),
             CacheHit = JsonHelpers.Bool(d, "cache_hit"),
             Outputs = outputs,
             Structured = JsonHelpers.OptObj(d, "structured"),
@@ -585,8 +639,31 @@ public sealed class EnconvertV2
             DurationMs = JsonHelpers.OptNumInt(d, "duration_ms"),
             Error = JsonHelpers.OptStr(d, "error"),
             Warnings = JsonHelpers.StrArr(d, "warnings"),
+            OptionsEcho = JsonHelpers.OptObj(d, "options_echo"),
         };
     }
+
+    /// <summary>Builds a direct-download result from the raw body + response headers.</summary>
+    private static async Task<PerceiveDirectResult> ToPerceiveDirectResultAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        return new PerceiveDirectResult
+        {
+            Content = content,
+            ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream",
+            Filename = response.Content.Headers.ContentDisposition?.FileName?.Trim('"'),
+            OperationId = HeaderValue(response, "X-Operation-Id") ?? string.Empty,
+            ObjectKey = HeaderValue(response, "X-Object-Key") ?? string.Empty,
+            CacheHit = HeaderValue(response, "X-Cache-Hit") == "true",
+            RenderQuality = double.TryParse(HeaderValue(response, "X-Render-Quality"), NumberStyles.Float, CultureInfo.InvariantCulture, out var quality) ? quality : null,
+            SourceStatusCode = int.TryParse(HeaderValue(response, "X-Source-Status-Code"), out var sourceStatus) ? sourceStatus : null,
+            ContentHash = HeaderValue(response, "X-Content-Hash"),
+            WarningsCount = int.TryParse(HeaderValue(response, "X-Warnings-Count"), out var warningsCount) ? warningsCount : 0,
+        };
+    }
+
+    private static string? HeaderValue(HttpResponseMessage response, string name) =>
+        response.Headers.TryGetValues(name, out var values) ? values.FirstOrDefault() : null;
 
     private static PerceiveBatchResult ToPerceiveBatchResult(JsonObject d)
     {

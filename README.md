@@ -57,6 +57,17 @@ var batch = await client.V2.PerceiveBatchAsync(new[] { "https://a.com", "https:/
     OutputMode = "zip",
 });
 var done = await client.V2.GetPerceiveBatchAsync(batch.JobId);
+
+// Direct download — stream the artifact bytes, no signed-URL round trip.
+// Requires exactly one artifact-producing output:
+var direct = await client.V2.PerceiveDirectAsync("https://example.com", new PerceiveOptions
+{
+    Outputs = new[] { "pdf" },
+});
+await File.WriteAllBytesAsync(direct.Filename ?? "page.pdf", direct.Content);
+
+// Re-download a stored artifact of an earlier operation (410 past retention):
+var bytes = await client.V2.DownloadPerceiveArtifactAsync(op.OperationId, "markdown");
 ```
 
 ### Discover — enumerate a site's URLs (no rendering)
