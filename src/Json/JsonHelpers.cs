@@ -45,6 +45,12 @@ internal static class JsonHelpers
         return o[key] is JsonValue v && v.TryGetValue<bool>(out var b) && b;
     }
 
+    /// <summary>Reads a boolean, or null when the field is absent (not a JSON boolean).</summary>
+    public static bool? OptBool(JsonObject o, string key)
+    {
+        return o[key] is JsonValue v && v.TryGetValue<bool>(out var b) ? b : null;
+    }
+
     /// <summary>True unless the field is present and literally the JSON boolean false (mirrors "field !== false").</summary>
     public static bool NotFalse(JsonObject o, string key)
     {

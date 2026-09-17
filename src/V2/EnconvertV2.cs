@@ -630,6 +630,8 @@ public sealed class EnconvertV2
             RenderQuality = JsonHelpers.OptNum(d, "render_quality"),
             StatusCode = JsonHelpers.OptNumInt(d, "status_code"),
             Deductions = JsonHelpers.DoubleDict(d, "deductions"),
+            IsBlocked = JsonHelpers.OptBool(d, "is_blocked"),
+            Billed = JsonHelpers.OptBool(d, "billed"),
             CacheHit = JsonHelpers.Bool(d, "cache_hit"),
             Outputs = outputs,
             Structured = JsonHelpers.OptObj(d, "structured"),

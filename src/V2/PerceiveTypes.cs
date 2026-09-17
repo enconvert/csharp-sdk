@@ -109,6 +109,15 @@ public sealed record PerceiveResult
     /// <summary>Named render-quality deductions that fired, e.g. {"http_error": 0.7}. Empty on a clean render.</summary>
     public required IReadOnlyDictionary<string, double> Deductions { get; init; }
 
+    /// <summary>
+    /// True when the page was a content-free block (challenge, bot wall).
+    /// Such reads return HTTP 200 with empty outputs and are not billed.
+    /// </summary>
+    public bool? IsBlocked { get; init; }
+
+    /// <summary>False when the read was not charged (blocked, http_error or login_wall).</summary>
+    public bool? Billed { get; init; }
+
     public bool CacheHit { get; init; }
 
     /// <summary>Keyed by output name (e.g. "markdown", "screenshot_full_page").</summary>
