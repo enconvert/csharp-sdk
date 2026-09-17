@@ -19,6 +19,9 @@ namespace Enconvert;
 public sealed class EnconvertClient : IDisposable
 {
     internal const string DefaultBaseUrl = "https://api.enconvert.com";
+    /// <summary>Keep in sync with &lt;Version&gt; in Enconvert.csproj at release.</summary>
+    internal const string Version = "0.1.1";
+    internal const string DefaultUserAgent = $"enconvert-sdk/{Version} (csharp)";
     internal const int DefaultTimeoutMs = 300_000;
     private const int DefaultBatchPollIntervalMs = 5_000;
     private const int DefaultBatchTimeoutMs = 1_800_000;
@@ -37,7 +40,8 @@ public sealed class EnconvertClient : IDisposable
     /// <param name="apiKey">Your Enconvert API key.</param>
     /// <param name="baseUrl">Override the API base URL. Defaults to https://api.enconvert.com.</param>
     /// <param name="timeoutMs">Request timeout in milliseconds. Defaults to 300_000 (5 minutes).</param>
-    public EnconvertClient(string apiKey, string? baseUrl = null, int timeoutMs = DefaultTimeoutMs)
+    /// <param name="userAgent">Override the User-Agent header sent to the API. Defaults to "enconvert-sdk/&lt;version&gt; (csharp)".</param>
+    public EnconvertClient(string apiKey, string? baseUrl = null, int timeoutMs = DefaultTimeoutMs, string? userAgent = null)
     {
         if (string.IsNullOrEmpty(apiKey))
         {
@@ -48,6 +52,7 @@ public sealed class EnconvertClient : IDisposable
         var resolvedBaseUrl = (baseUrl ?? DefaultBaseUrl).TrimEnd('/');
         _baseUri = new Uri(resolvedBaseUrl + "/");
         _http = new HttpClient { Timeout = TimeSpan.FromMilliseconds(timeoutMs) };
+        _http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", userAgent ?? DefaultUserAgent);
         // Downloads target a pre-signed S3 URL directly: no API key header, and no
         // client timeout (large files may legitimately take a while to stream).
         _download = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };

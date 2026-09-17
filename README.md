@@ -381,8 +381,9 @@ The exception hierarchy is `EnconvertException` -> `ApiException` (carries `Stat
 ```csharp
 var client = new EnconvertClient(
     apiKey: "sk_...",
-    baseUrl: null,      // override the API base URL; defaults to https://api.enconvert.com
-    timeoutMs: 300_000  // default
+    baseUrl: null,       // override the API base URL; defaults to https://api.enconvert.com
+    timeoutMs: 300_000,  // default
+    userAgent: null      // override the User-Agent; defaults to "enconvert-sdk/<version> (csharp)"
 );
 ```
 
